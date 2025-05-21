@@ -2,12 +2,12 @@ package whois
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
 
 	"github.com/likexian/whois"
 	"github.com/mark3labs/mcp-go/mcp"
+	resp "github.com/patrickdappollonio/mcp-domaintools/internal/response"
 )
 
 // Config holds WHOIS configuration.
@@ -42,16 +42,11 @@ func HandleWhoisQuery(ctx context.Context, request mcp.CallToolRequest, config *
 		return nil, fmt.Errorf("WHOIS query failed: %s", err)
 	}
 
-	// Format response as JSON
-	response := map[string]interface{}{
+	// Format response as JSON using the response package
+	responseData := map[string]interface{}{
 		"domain": domain,
 		"result": result,
 	}
 
-	jsonBytes, err := json.Marshal(response)
-	if err != nil {
-		return nil, fmt.Errorf("error generating JSON: %s", err)
-	}
-
-	return mcp.NewToolResultText(string(jsonBytes)), nil
+	return resp.JSON(responseData)
 }
