@@ -13,10 +13,10 @@ import (
 
 // DomainToolsConfig contains configuration for the domain tools.
 type DomainToolsConfig struct {
-	QueryConfig     *dns.QueryConfig
-	WhoisConfig     *whois.Config
-	ResolverConfig  *resolver.Config
-	Version         string
+	QueryConfig    *dns.QueryConfig
+	WhoisConfig    *whois.Config
+	ResolverConfig *resolver.Config
+	Version        string
 }
 
 // SetupTools creates and configures the domain query tools.
@@ -27,7 +27,7 @@ func SetupTools(config *DomainToolsConfig) (*server.MCPServer, error) {
 		config.Version,
 		server.WithRecovery(),
 	)
-	
+
 	// Initialize resolver config if not provided
 	if config.ResolverConfig == nil {
 		config.ResolverConfig = &resolver.Config{
@@ -44,8 +44,9 @@ func SetupTools(config *DomainToolsConfig) (*server.MCPServer, error) {
 		),
 		mcp.WithString("record_type",
 			mcp.Required(),
-			mcp.Description("The type of DNS record to query"),
+			mcp.Description("The type of DNS record to query; defaults to A"),
 			mcp.Enum("A", "AAAA", "CNAME", "MX", "NS", "PTR", "SOA", "SRV", "TXT"),
+			mcp.DefaultString("A"),
 		),
 	)
 
@@ -58,8 +59,9 @@ func SetupTools(config *DomainToolsConfig) (*server.MCPServer, error) {
 		),
 		mcp.WithString("record_type",
 			mcp.Required(),
-			mcp.Description("The type of DNS record to query"),
+			mcp.Description("The type of DNS record to query; defaults to A"),
 			mcp.Enum("A", "AAAA", "CNAME", "MX", "NS", "PTR", "SOA", "SRV", "TXT"),
+			mcp.DefaultString("A"),
 		),
 	)
 
@@ -82,6 +84,7 @@ func SetupTools(config *DomainToolsConfig) (*server.MCPServer, error) {
 		mcp.WithString("ip_version",
 			mcp.Description("IP version to resolve (ipv4, ipv6, or both); defaults to ipv4"),
 			mcp.Enum("ipv4", "ipv6", "both"),
+			mcp.DefaultString("ipv4"),
 		),
 	)
 
@@ -110,5 +113,3 @@ func SetupTools(config *DomainToolsConfig) (*server.MCPServer, error) {
 
 	return s, nil
 }
-
-
