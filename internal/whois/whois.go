@@ -39,7 +39,7 @@ func HandleWhoisQuery(ctx context.Context, request mcp.CallToolRequest, config *
 	}
 
 	if err != nil {
-		return nil, fmt.Errorf("WHOIS query failed: %s", err)
+		return nil, fmt.Errorf("WHOIS query failed: %w", err)
 	}
 
 	// Format response as JSON using the response package

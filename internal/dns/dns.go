@@ -11,8 +11,8 @@ import (
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/miekg/dns"
-	doh "github.com/shynome/doh-client"
 	resp "github.com/patrickdappollonio/mcp-domaintools/internal/response"
+	doh "github.com/shynome/doh-client"
 )
 
 // QueryConfig holds DNS query configuration.
@@ -63,7 +63,7 @@ func HandleLocalDNSQuery(ctx context.Context, request mcp.CallToolRequest, confi
 	// Get DNS servers in a cross-platform way
 	servers, err := getSystemDNSServers(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get DNS servers: %s", err)
+		return nil, fmt.Errorf("failed to get DNS servers: %w", err)
 	}
 
 	// Try each configured server until we get a response
@@ -79,7 +79,7 @@ func HandleLocalDNSQuery(ctx context.Context, request mcp.CallToolRequest, confi
 	}
 
 	if queryErr != nil {
-		return nil, fmt.Errorf("DNS query failed: %s", queryErr)
+		return nil, fmt.Errorf("DNS query failed: %w", queryErr)
 	}
 
 	if dnsResponse == nil {
