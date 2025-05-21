@@ -9,6 +9,7 @@ require (
 	github.com/mark3labs/mcp-go v0.28.0
 	github.com/miekg/dns v1.1.58
 	github.com/shynome/doh-client v1.2.0
+	golang.org/x/sync v0.6.0
 )
 
 require (
