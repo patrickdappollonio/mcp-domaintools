@@ -15,6 +15,7 @@ For custom WHOIS servers, you can use the `--custom-whois-server` flag. The serv
 - **WHOIS Lookups**: Perform WHOIS queries to get domain registration information
 - **Multiple Record Types**: Support for A, AAAA, CNAME, MX, NS, PTR, SOA, SRV, and TXT record types
 - **Fallback Mechanism**: Automatically tries multiple DNS servers for reliable results
+- **SSE Support**: Run as an HTTP server with Server-Sent Events (SSE) for web-based integrations
 
 ## Installation
 
@@ -81,6 +82,12 @@ docker pull ghcr.io/patrickdappollonio/mcp-domaintools:latest
 docker run --rm ghcr.io/patrickdappollonio/mcp-domaintools:latest
 ```
 
+For SSE mode with Docker, expose the SSE port (default `3000`):
+
+```bash
+docker run --rm -p 3000:3000 ghcr.io/patrickdappollonio/mcp-domaintools:latest --sse --sse-port 3000
+```
+
 Check the implementation above on how to configure the MCP server to run as a container in your editor or tool.
 
 ### GitHub Releases
@@ -94,6 +101,30 @@ There are 3 tools available:
 - `local_dns_query`: Perform DNS queries against the local DNS resolver as configured by the OS
 - `remote_dns_query`: Perform DNS queries against a remote DNS-over-HTTPS server
 - `whois_query`: Perform WHOIS lookups to get domain registration information
+
+## Running Modes
+
+### Standard (stdio) Mode
+
+By default, `mcp-domaintools` runs in stdio mode, which is suitable for integration with editors and other tools that communicate via standard input/output.
+
+```bash
+mcp-domaintools
+```
+
+### Server-Sent Events (SSE) Mode
+
+Alternatively, you can run `mcp-domaintools` as an HTTP server with SSE support for web-based integrations:
+
+```bash
+mcp-domaintools --sse --sse-port=3000
+```
+
+In SSE mode, the server will listen on the specified port (default: 3000) and provide the same MCP tools over HTTP using Server-Sent Events. This is useful for web applications or environments where stdio communication isn't practical.
+
+**Available SSE Options:**
+- `--sse`: Enable SSE server mode
+- `--sse-port=PORT`: Specify the port to listen on (default: 3000)
 
 ### Local DNS Query
 
