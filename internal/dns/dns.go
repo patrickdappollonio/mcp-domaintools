@@ -2,7 +2,6 @@ package dns
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net"
 	"net/http"
@@ -12,6 +11,7 @@ import (
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/miekg/dns"
+	resp "github.com/patrickdappollonio/mcp-domaintools/internal/response"
 	doh "github.com/shynome/doh-client"
 )
 
@@ -57,13 +57,13 @@ func HandleLocalDNSQuery(ctx context.Context, request mcp.CallToolRequest, confi
 	c := new(dns.Client)
 	c.Timeout = config.Timeout
 
-	var response *dns.Msg
+	var dnsResponse *dns.Msg
 	var queryErr error
 
 	// Get DNS servers in a cross-platform way
 	servers, err := getSystemDNSServers(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get DNS servers: %s", err)
+		return nil, fmt.Errorf("failed to get DNS servers: %w", err)
 	}
 
 	// Try each configured server until we get a response
@@ -72,27 +72,23 @@ func HandleLocalDNSQuery(ctx context.Context, request mcp.CallToolRequest, confi
 		if !strings.Contains(server, ":") {
 			serverAddr = net.JoinHostPort(server, "53")
 		}
-		response, _, queryErr = c.Exchange(m, serverAddr)
-		if queryErr == nil && response != nil {
+		dnsResponse, _, queryErr = c.Exchange(m, serverAddr)
+		if queryErr == nil && dnsResponse != nil {
 			break
 		}
 	}
 
 	if queryErr != nil {
-		return nil, fmt.Errorf("DNS query failed: %s", queryErr)
+		return nil, fmt.Errorf("DNS query failed: %w", queryErr)
 	}
 
-	if response == nil {
+	if dnsResponse == nil {
 		return nil, fmt.Errorf("no response from DNS servers")
 	}
 
-	// Format the response as JSON
-	result := createDNSResponse(response)
-	jsonBytes, err := json.Marshal(result)
-	if err != nil {
-		return nil, fmt.Errorf("error generating JSON: %s", err)
-	}
-	return mcp.NewToolResultText(string(jsonBytes)), nil
+	// Format the response as JSON using the response package
+	result := createDNSResponse(dnsResponse)
+	return resp.JSON(result)
 }
 
 // getSystemDNSServers returns a list of system DNS servers in a cross-platform way
@@ -216,18 +212,14 @@ func HandleRemoteDNSQuery(ctx context.Context, request mcp.CallToolRequest, conf
 	}
 
 	// Read the response
-	response, err := dnsConn.ReadMsg()
+	dnsResponse, err := dnsConn.ReadMsg()
 	if err != nil {
 		return nil, fmt.Errorf("failed to read DNS response: %v", err)
 	}
 
-	// Format the response as JSON
-	result := createDNSResponse(response)
-	jsonBytes, err := json.Marshal(result)
-	if err != nil {
-		return nil, fmt.Errorf("error generating JSON: %v", err)
-	}
-	return mcp.NewToolResultText(string(jsonBytes)), nil
+	// Format the response as JSON using the response package
+	result := createDNSResponse(dnsResponse)
+	return resp.JSON(result)
 }
 
 // ConvertToQType converts a string record type to the corresponding DNS query type.
