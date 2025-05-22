@@ -1,6 +1,6 @@
 module github.com/patrickdappollonio/mcp-domaintools
 
-go 1.23
+go 1.23.0
 
 toolchain go1.24.3
 
@@ -9,7 +9,7 @@ require (
 	github.com/mark3labs/mcp-go v0.29.0
 	github.com/miekg/dns v1.1.58
 	github.com/shynome/doh-client v1.2.0
-	golang.org/x/sync v0.6.0
+	golang.org/x/sync v0.14.0
 )
 
 require (
