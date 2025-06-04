@@ -90,6 +90,12 @@ docker run --rm -p 3000:3000 ghcr.io/patrickdappollonio/mcp-domaintools:latest -
 
 Check the implementation above on how to configure the MCP server to run as a container in your editor or tool.
 
+### Cursor
+
+You can use one-click to install in Cursor (note this will use the Docker version of the MCP server since it doesn't require a local binary installation):
+
+[![Install MCP Server](https://cursor.com/deeplink/mcp-install-dark.png)](cursor://anysphere.cursor-deeplink/mcp/install?name=dns&config=eyJjb21tYW5kIjoiZG9ja2VyIiwiYXJncyI6WyJydW4iLCItaSIsIi0tcm0iLCJnaGNyLmlvL3BhdHJpY2tkYXBwb2xsb25pby9tY3AtZG9tYWludG9vbHM6bGF0ZXN0Il0sImVudiI6e319)
+
 ### GitHub Releases
 
 Download the pre-built binaries for your platform from the [GitHub Releases page](https://github.com/patrickdappollonio/mcp-domaintools/releases).
