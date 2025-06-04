@@ -94,7 +94,7 @@ Check the implementation above on how to configure the MCP server to run as a co
 
 You can use one-click to install in Cursor (note this will use the Docker version of the MCP server since it doesn't require a local binary installation):
 
-<a href="cursor://anysphere.cursor-deeplink/mcp/install?name=domaintools&config=eyJjb21tYW5kIjoiZG9ja2VyIiwiYXJncyI6WyJydW4iLCItaSIsIi0tcm0iLCJnaGNyLmlvL3BhdHJpY2tkYXBwb2xsb25pby9tY3AtZG9tYWludG9vbHM6bGF0ZXN0Il0sImVudiI6e319"><img src="https://cursor.com/deeplink/mcp-install-dark.png" alt="Add domaintools MCP server to Cursor" height="40" /></a>
+[![Install MCP Server](assets/cursor.svg)](cursor://anysphere.cursor-deeplink/mcp/install?name=domaintools&config=eyJjb21tYW5kIjoiZG9ja2VyIiwiYXJncyI6WyJydW4iLCItaSIsIi0tcm0iLCJnaGNyLmlvL3BhdHJpY2tkYXBwb2xsb25pby9tY3AtZG9tYWludG9vbHM6bGF0ZXN0Il0sImVudiI6e319)
 
 ### GitHub Releases
 
