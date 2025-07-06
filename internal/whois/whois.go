@@ -8,6 +8,7 @@ import (
 	"github.com/likexian/whois"
 	"github.com/mark3labs/mcp-go/mcp"
 	resp "github.com/patrickdappollonio/mcp-domaintools/internal/response"
+	"github.com/patrickdappollonio/mcp-domaintools/internal/utils"
 )
 
 // Config holds WHOIS configuration.
@@ -15,15 +16,25 @@ type Config struct {
 	CustomServer string
 }
 
+// whoisQueryParams represents the parameters for WHOIS queries.
+type whoisQueryParams struct {
+	Domain string `json:"domain"`
+}
+
 // HandleWhoisQuery processes WHOIS queries.
 func HandleWhoisQuery(ctx context.Context, request mcp.CallToolRequest, config *Config) (*mcp.CallToolResult, error) {
-	domain := mcp.ParseString(request, "domain", "")
-	if domain == "" {
+	var params whoisQueryParams
+	if err := request.BindArguments(&params); err != nil {
+		return nil, fmt.Errorf("failed to parse tool input: %w", utils.ParseJSONUnmarshalError(err))
+	}
+
+	// Validate required parameters
+	if params.Domain == "" {
 		return nil, fmt.Errorf("parameter \"domain\" is required")
 	}
 
 	// Clean and validate domain format
-	domain = strings.TrimSpace(domain)
+	domain := strings.TrimSpace(params.Domain)
 	if strings.Contains(domain, "..") || strings.HasPrefix(domain, ".") {
 		return nil, fmt.Errorf("invalid domain format: %q", domain)
 	}

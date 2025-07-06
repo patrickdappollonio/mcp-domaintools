@@ -12,6 +12,7 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/miekg/dns"
 	resp "github.com/patrickdappollonio/mcp-domaintools/internal/response"
+	"github.com/patrickdappollonio/mcp-domaintools/internal/utils"
 	doh "github.com/shynome/doh-client"
 )
 
@@ -21,29 +22,40 @@ type QueryConfig struct {
 	RemoteServerAddress string
 }
 
+// dnsQueryParams represents the parameters for DNS queries.
+type dnsQueryParams struct {
+	Domain     string `json:"domain"`
+	RecordType string `json:"record_type"`
+}
+
 // HandleLocalDNSQuery processes local DNS queries using OS-defined DNS servers.
 func HandleLocalDNSQuery(ctx context.Context, request mcp.CallToolRequest, config *QueryConfig) (*mcp.CallToolResult, error) {
-	domain := mcp.ParseString(request, "domain", "")
-	if domain == "" {
+	var params dnsQueryParams
+	if err := request.BindArguments(&params); err != nil {
+		return nil, fmt.Errorf("failed to parse tool input: %w", utils.ParseJSONUnmarshalError(err))
+	}
+
+	// Validate required parameters
+	if params.Domain == "" {
 		return nil, fmt.Errorf("parameter \"domain\" is required")
 	}
 
-	recordTypeStr := mcp.ParseString(request, "record_type", "")
-	if recordTypeStr == "" {
+	if params.RecordType == "" {
 		return nil, fmt.Errorf("parameter \"record_type\" is required")
 	}
 
 	// Validate domain format
-	if strings.Contains(domain, "..") || strings.HasPrefix(domain, ".") {
-		return nil, fmt.Errorf("invalid domain format: %q", domain)
+	if strings.Contains(params.Domain, "..") || strings.HasPrefix(params.Domain, ".") {
+		return nil, fmt.Errorf("invalid domain format: %q", params.Domain)
 	}
 
-	recordType, err := ConvertToQType(recordTypeStr)
+	recordType, err := ConvertToQType(params.RecordType)
 	if err != nil {
 		return nil, err
 	}
 
 	// Ensure domain ends with a dot for DNS queries
+	domain := params.Domain
 	if !strings.HasSuffix(domain, ".") {
 		domain = domain + "."
 	}
@@ -144,27 +156,32 @@ func getSystemDNSServers(ctx context.Context) ([]string, error) {
 
 // HandleRemoteDNSQuery processes DNS queries using DNS-over-HTTPS.
 func HandleRemoteDNSQuery(ctx context.Context, request mcp.CallToolRequest, config *QueryConfig) (*mcp.CallToolResult, error) {
-	domain := mcp.ParseString(request, "domain", "")
-	if domain == "" {
+	var params dnsQueryParams
+	if err := request.BindArguments(&params); err != nil {
+		return nil, fmt.Errorf("failed to parse tool input: %w", utils.ParseJSONUnmarshalError(err))
+	}
+
+	// Validate required parameters
+	if params.Domain == "" {
 		return nil, fmt.Errorf("domain parameter is required")
 	}
 
-	recordTypeStr := mcp.ParseString(request, "record_type", "")
-	if recordTypeStr == "" {
+	if params.RecordType == "" {
 		return nil, fmt.Errorf("record_type parameter is required")
 	}
 
 	// Validate domain format
-	if strings.Contains(domain, "..") || strings.HasPrefix(domain, ".") {
-		return nil, fmt.Errorf("invalid domain format: %s", domain)
+	if strings.Contains(params.Domain, "..") || strings.HasPrefix(params.Domain, ".") {
+		return nil, fmt.Errorf("invalid domain format: %s", params.Domain)
 	}
 
-	recordType, err := ConvertToQType(recordTypeStr)
+	recordType, err := ConvertToQType(params.RecordType)
 	if err != nil {
 		return nil, err
 	}
 
 	// Ensure domain ends with a dot for DNS queries
+	domain := params.Domain
 	if !strings.HasSuffix(domain, ".") {
 		domain = domain + "."
 	}

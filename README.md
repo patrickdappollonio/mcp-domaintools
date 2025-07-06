@@ -1,18 +1,22 @@
-# DNS and WHOIS query MCP server `mcp-domaintools`
+# Network and domain tools MCP server `mcp-domaintools`
 
-<img src="https://i.imgur.com/cai3zrG.png" width="160" align="right" />  `mcp-domaintools` is a [Model Context Protocol (MCP)](https://modelcontextprotocol.io/introduction) server providing DNS and WHOIS query capabilities for AI assistants. It enables AI models to perform DNS lookups both via local DNS resolvers and remote DNS-over-HTTPS services.
+<img src="https://i.imgur.com/cai3zrG.png" width="160" align="right" /> `mcp-domaintools` is a [Model Context Protocol (MCP)](https://modelcontextprotocol.io/introduction) server providing comprehensive network and domain analysis capabilities for AI assistants. It enables AI models to perform DNS lookups, WHOIS queries, connectivity testing, TLS certificate analysis, HTTP endpoint monitoring, and hostname resolution.
 
 For local DNS queries, it uses the system's configured DNS servers. For remote DNS queries, it uses Cloudflare DNS-over-HTTPS queries with a fallback to Google DNS-over-HTTPS. This is more than enough for most use cases.
 
-For custom DNS-over-HTTPS servers, you can use the `--remote-server-address` flag. The server endpoint must implement the HTTP reponse format as defined by [RFC 8484](https://datatracker.ietf.org/doc/html/rfc8484#section-4.2).
+For custom DNS-over-HTTPS servers, you can use the `--remote-server-address` flag. The server endpoint must implement the HTTP response format as defined by [RFC 8484](https://datatracker.ietf.org/doc/html/rfc8484#section-4.2).
 
-For custom WHOIS servers, you can use the `--custom-whois-server` flag. The server endpoint must implement the HTTP reponse format as defined by [RFC 3912](https://datatracker.ietf.org/doc/html/rfc3912), although plain text responses are also supported.
+For custom WHOIS servers, you can use the `--custom-whois-server` flag. The server endpoint must implement the HTTP response format as defined by [RFC 3912](https://datatracker.ietf.org/doc/html/rfc3912), although plain text responses are also supported.
 
 ## Features
 
 - **Local DNS Queries**: Perform DNS lookups using the OS-configured DNS servers
 - **Remote DNS-over-HTTPS**: Perform secure DNS queries via Cloudflare and Google DNS-over-HTTPS services
 - **WHOIS Lookups**: Perform WHOIS queries to get domain registration information
+- **Hostname Resolution**: Convert hostnames to their corresponding IP addresses (IPv4, IPv6, or both)
+- **Ping Operations**: Test connectivity and measure response times to hosts using ICMP
+- **HTTP Ping Operations**: Test HTTP endpoints and measure detailed response times including DNS, connection, TLS, and TTFB timing
+- **TLS Certificate Analysis**: Check TLS certificate chains for validity, expiration, and detailed certificate information
 - **Multiple Record Types**: Support for A, AAAA, CNAME, MX, NS, PTR, SOA, SRV, and TXT record types
 - **Fallback Mechanism**: Automatically tries multiple DNS servers for reliable results
 - **SSE Support**: Run as an HTTP server with Server-Sent Events (SSE) for web-based integrations
@@ -26,13 +30,18 @@ Add the following configuration to your editor's settings to use `mcp-domaintool
 ```json5
 {
   "mcpServers": {
-    "dns": {
+    "domaintools": {
       "command": "mcp-domaintools",
       "args": [
         // Uncomment and modify as needed:
         // "--remote-server-address=https://your-custom-doh-server.com/dns-query",
         // "--custom-whois-server=whois.yourdomain.com",
-        // "--timeout=10s"
+        // "--timeout=5s",
+        // "--ping-timeout=5s",
+        // "--ping-count=4",
+        // "--http-ping-timeout=10s",
+        // "--http-ping-count=1",
+        // "--tls-timeout=10s"
       ],
       "env": {}
     }
@@ -47,17 +56,22 @@ Alternatively, you can run `mcp-domaintools` directly with Docker without instal
 ```json5
 {
   "mcpServers": {
-    "dns": {
+    "domaintools": {
       "command": "docker",
       "args": [
         "run",
         "-i",
         "--rm",
-        "ghcr.io/patrickdappollonio/mcp-domaintools:latest"
+        "ghcr.io/patrickdappollonio/mcp-domaintools:latest",
         // Add custom options if needed:
         // "--remote-server-address=https://your-custom-doh-server.com/dns-query",
         // "--custom-whois-server=whois.yourdomain.com",
-        // "--timeout=10s"
+        // "--timeout=5s",
+        // "--ping-timeout=5s",
+        // "--ping-count=4",
+        // "--http-ping-timeout=10s",
+        // "--http-ping-count=1",
+        // "--tls-timeout=10s"
       ],
       "env": {}
     }
@@ -102,11 +116,15 @@ Download the pre-built binaries for your platform from the [GitHub Releases page
 
 ## Available MCP Tools
 
-There are 3 tools available:
+There are **7 tools** available:
 
-- `local_dns_query`: Perform DNS queries against the local DNS resolver as configured by the OS
-- `remote_dns_query`: Perform DNS queries against a remote DNS-over-HTTPS server
-- `whois_query`: Perform WHOIS lookups to get domain registration information
+- **`local_dns_query`**: Perform DNS queries against the local DNS resolver as configured by the OS
+- **`remote_dns_query`**: Perform DNS queries against a remote DNS-over-HTTPS server (Cloudflare/Google)
+- **`whois_query`**: Perform WHOIS lookups to get domain registration information
+- **`resolve_hostname`**: Convert a hostname to its corresponding IP addresses (IPv4, IPv6, or both)
+- **`ping`**: Perform ICMP ping operations to test connectivity and measure response times to hosts
+- **`http_ping`**: Perform HTTP ping operations to test HTTP endpoints and measure detailed response times
+- **`tls_certificate_check`**: Check TLS certificate chain for a domain to analyze certificate validity, expiration, and chain structure
 
 ## Running Modes
 
@@ -128,29 +146,204 @@ mcp-domaintools --sse --sse-port=3000
 
 In SSE mode, the server will listen on the specified port (default: 3000) and provide the same MCP tools over HTTP using Server-Sent Events. This is useful for web applications or environments where stdio communication isn't practical.
 
-**Available SSE Options:**
+## Configuration Options
+
+The following command-line flags are available to configure the MCP server:
+
+### General Options
+- `--timeout=DURATION`: Timeout for DNS queries (default: 5s)
+- `--remote-server-address=URL`: Custom DNS-over-HTTPS server address
+- `--custom-whois-server=ADDRESS`: Custom WHOIS server address
+
+### Ping Options
+- `--ping-timeout=DURATION`: Timeout for ping operations (default: 5s)
+- `--ping-count=NUMBER`: Default number of ping packets to send (default: 4)
+
+### HTTP Ping Options
+- `--http-ping-timeout=DURATION`: Timeout for HTTP ping operations (default: 10s)
+- `--http-ping-count=NUMBER`: Default number of HTTP ping requests to send (default: 1)
+
+### TLS Options
+- `--tls-timeout=DURATION`: Timeout for TLS certificate checks (default: 10s)
+
+### SSE Server Options
 - `--sse`: Enable SSE server mode
 - `--sse-port=PORT`: Specify the port to listen on (default: 3000)
+
+## Tool Usage Documentation
 
 ### Local DNS Query
 
 Performs DNS queries using local OS-defined DNS servers.
 
 **Arguments:**
-- `domain` (required): The domain name to query (e.g., example.com)
-- `record_type` (required): Type of DNS record to query (A, AAAA, CNAME, MX, NS, PTR, SOA, SRV, TXT)
+- `domain` (required): The domain name to query (e.g., `example.com`)
+- `record_type` (required): Type of DNS record to query - defaults to `A`
+  - Supported types: `A`, `AAAA`, `CNAME`, `MX`, `NS`, `PTR`, `SOA`, `SRV`, `TXT`
+
+**Example:**
+```bash
+# Query A record for example.com
+{"domain": "example.com", "record_type": "A"}
+
+# Query MX records for a domain
+{"domain": "example.com", "record_type": "MX"}
+```
 
 ### Remote DNS Query
 
-Performs DNS queries using remote DNS-over-HTTPS servers (Google and Cloudflare).
+Performs DNS queries using remote DNS-over-HTTPS servers (Cloudflare as primary, Google as fallback).
 
 **Arguments:**
-- `domain` (required): The domain name to query (e.g., example.com)
-- `record_type` (required): Type of DNS record to query (A, AAAA, CNAME, MX, NS, PTR, SOA, SRV, TXT)
+- `domain` (required): The domain name to query (e.g., `example.com`)
+- `record_type` (required): Type of DNS record to query - defaults to `A`
+  - Supported types: `A`, `AAAA`, `CNAME`, `MX`, `NS`, `PTR`, `SOA`, `SRV`, `TXT`
+
+**Example:**
+```bash
+# Query A record using remote DNS-over-HTTPS
+{"domain": "example.com", "record_type": "A"}
+```
 
 ### WHOIS Query
 
 Performs WHOIS lookups to get domain registration information.
 
 **Arguments:**
-- `domain` (required): The domain name to query (e.g., example.com)
+- `domain` (required): The domain name to query (e.g., `example.com`)
+
+**Example:**
+```bash
+# Get WHOIS information for a domain
+{"domain": "example.com"}
+```
+
+### Hostname Resolution
+
+Converts a hostname to its corresponding IP addresses using the system resolver.
+
+**Arguments:**
+- `hostname` (required): The hostname to resolve (e.g., `example.com`)
+- `ip_version` (optional): IP version to resolve - defaults to `ipv4`
+  - Options: `ipv4`, `ipv6`, `both`
+
+**Example:**
+```bash
+# Resolve to IPv4 addresses only
+{"hostname": "example.com", "ip_version": "ipv4"}
+
+# Resolve to both IPv4 and IPv6
+{"hostname": "example.com", "ip_version": "both"}
+```
+
+### Ping
+
+Performs ICMP ping operations to test connectivity and measure response times to hosts.
+
+**Arguments:**
+- `target` (required): The hostname or IP address to ping (e.g., `example.com` or `8.8.8.8`)
+- `count` (optional): Number of ping packets to send - defaults to `4`
+
+**Example:**
+```bash
+# Ping a host 4 times (default)
+{"target": "example.com"}
+
+# Ping a host 10 times
+{"target": "8.8.8.8", "count": 10}
+```
+
+### HTTP Ping
+
+Performs HTTP ping operations to test HTTP endpoints and measure detailed response times.
+
+**Arguments:**
+- `url` (required): The URL to ping (e.g., `https://api.example.com/users`)
+- `method` (optional): HTTP method to use - defaults to `GET`
+  - Supported methods: `GET`, `POST`, `PUT`, `DELETE`, `HEAD`, `OPTIONS`, `PATCH`
+- `count` (optional): Number of HTTP requests to send - defaults to `1`
+
+**Response Format:**
+The tool returns detailed timing information in a one-liner format:
+```
+GET https://api.example.com/users 200 OK | dns=42ms conn=156ms tls=298ms ttfb=567ms total=623ms
+```
+
+**Timing Measurements:**
+- `dns`: DNS resolution time
+- `conn`: TCP connection establishment time
+- `tls`: TLS handshake time (only for HTTPS URLs)
+- `ttfb`: Time to first byte (server response time)
+- `total`: Total request time
+
+**Example:**
+```bash
+# Single GET request
+{"url": "https://httpbin.org/get"}
+
+# Multiple POST requests
+{"url": "https://httpbin.org/post", "method": "POST", "count": 3}
+
+# Test API endpoint
+{"url": "https://api.github.com/users/octocat"}
+```
+
+### TLS Certificate Check
+
+Checks TLS certificate chain for a domain to analyze certificate validity, expiration, and chain structure.
+
+**Arguments:**
+- `domain` (required): The domain name to check TLS certificate for (e.g., `example.com`)
+- `port` (optional): Port to connect to for TLS check - defaults to `443`
+- `include_chain` (optional): Whether to include the full certificate chain in the response - defaults to `true`
+- `check_expiry` (optional): Whether to check certificate expiration and provide warnings - defaults to `true`
+- `server_name` (optional): Server name for SNI (Server Name Indication) - defaults to the domain name
+
+**Example:**
+```bash
+# Check TLS certificate for domain
+{"domain": "example.com"}
+
+# Check TLS certificate on custom port
+{"domain": "example.com", "port": 8443}
+
+# Check without certificate chain details
+{"domain": "example.com", "include_chain": false}
+```
+
+## Examples
+
+### Basic Usage Examples
+
+```bash
+# Start the MCP server in stdio mode
+mcp-domaintools
+
+# Start with custom DNS timeout
+mcp-domaintools --timeout=10s
+
+# Start with custom HTTP ping settings
+mcp-domaintools --http-ping-timeout=15s --http-ping-count=3
+
+# Start in SSE mode on port 8080
+mcp-domaintools --sse --sse-port=8080
+```
+
+### Advanced Configuration Examples
+
+```bash
+# Use custom DNS-over-HTTPS server
+mcp-domaintools --remote-server-address=https://dns.quad9.net/dns-query
+
+# Use custom WHOIS server
+mcp-domaintools --custom-whois-server=whois.custom.com
+
+# Combine multiple options
+mcp-domaintools \
+  --timeout=10s \
+  --ping-timeout=3s \
+  --ping-count=3 \
+  --http-ping-timeout=15s \
+  --http-ping-count=2 \
+  --tls-timeout=30s
+```
