@@ -8,6 +8,7 @@ import (
 
 	"github.com/mark3labs/mcp-go/mcp"
 	resp "github.com/patrickdappollonio/mcp-domaintools/internal/response"
+	"github.com/patrickdappollonio/mcp-domaintools/internal/utils"
 )
 
 // Config holds resolver configuration.
@@ -15,14 +16,28 @@ type Config struct {
 	Timeout time.Duration
 }
 
+// resolverParams represents the parameters for hostname resolution.
+type resolverParams struct {
+	Hostname  string `json:"hostname"`
+	IPVersion string `json:"ip_version"`
+}
+
 // HandleHostnameResolution resolves a hostname to its IP addresses.
 func HandleHostnameResolution(ctx context.Context, request mcp.CallToolRequest, config *Config) (*mcp.CallToolResult, error) {
-	hostname := mcp.ParseString(request, "hostname", "")
-	if hostname == "" {
+	var params resolverParams
+	if err := request.BindArguments(&params); err != nil {
+		return nil, fmt.Errorf("failed to parse tool input: %w", utils.ParseJSONUnmarshalError(err))
+	}
+
+	// Validate required parameters
+	if params.Hostname == "" {
 		return nil, fmt.Errorf("parameter \"hostname\" is required")
 	}
 
-	ipVersion := mcp.ParseString(request, "ip_version", "ipv4")
+	// Set default IP version if not provided
+	if params.IPVersion == "" {
+		params.IPVersion = "ipv4"
+	}
 
 	// Create context with timeout
 	ctxWithTimeout, cancel := context.WithTimeout(ctx, config.Timeout)
@@ -30,23 +45,23 @@ func HandleHostnameResolution(ctx context.Context, request mcp.CallToolRequest, 
 
 	// Initialize response maps
 	responseData := map[string]interface{}{
-		"hostname":   hostname,
+		"hostname":   params.Hostname,
 		"timestamp":  time.Now().Format(time.RFC3339),
-		"ip_version": ipVersion,
+		"ip_version": params.IPVersion,
 	}
 
 	// Resolve based on IP version
-	switch ipVersion {
+	switch params.IPVersion {
 	case "ipv4", "ipv6":
-		addresses, err := lookupIPAddresses(ctxWithTimeout, hostname, ipVersion)
+		addresses, err := lookupIPAddresses(ctxWithTimeout, params.Hostname, params.IPVersion)
 		if err != nil {
-			return nil, fmt.Errorf("failed to resolve %s addresses: %w", ipVersion, err)
+			return nil, fmt.Errorf("failed to resolve %s addresses: %w", params.IPVersion, err)
 		}
-		responseData[ipVersion+"_addresses"] = addresses
+		responseData[params.IPVersion+"_addresses"] = addresses
 
 	default: // "both"
 		// Get IPv4 addresses
-		ipv4Addresses, err := lookupIPAddresses(ctxWithTimeout, hostname, "ipv4")
+		ipv4Addresses, err := lookupIPAddresses(ctxWithTimeout, params.Hostname, "ipv4")
 		if err == nil {
 			responseData["ipv4_addresses"] = ipv4Addresses
 		} else {
@@ -54,7 +69,7 @@ func HandleHostnameResolution(ctx context.Context, request mcp.CallToolRequest, 
 		}
 
 		// Get IPv6 addresses
-		ipv6Addresses, err := lookupIPAddresses(ctxWithTimeout, hostname, "ipv6")
+		ipv6Addresses, err := lookupIPAddresses(ctxWithTimeout, params.Hostname, "ipv6")
 		if err == nil {
 			responseData["ipv6_addresses"] = ipv6Addresses
 		} else {

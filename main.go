@@ -12,7 +12,9 @@ import (
 
 	"github.com/mark3labs/mcp-go/server"
 	"github.com/patrickdappollonio/mcp-domaintools/internal/dns"
+	"github.com/patrickdappollonio/mcp-domaintools/internal/ping"
 	internalServer "github.com/patrickdappollonio/mcp-domaintools/internal/server"
+	"github.com/patrickdappollonio/mcp-domaintools/internal/tls"
 	"github.com/patrickdappollonio/mcp-domaintools/internal/whois"
 	"golang.org/x/sync/errgroup"
 )
@@ -23,6 +25,9 @@ var (
 	enableSSEServer     bool
 	sseServerPort       int
 	timeout             time.Duration
+	pingTimeout         time.Duration
+	pingCount           int
+	tlsTimeout          time.Duration
 	version             = "dev"
 )
 
@@ -39,6 +44,9 @@ func run() error {
 	flag.BoolVar(&enableSSEServer, "sse", false, "Enable SSE server mode")
 	flag.IntVar(&sseServerPort, "sse-port", 3000, "SSE server port (if SSE server mode is enabled)")
 	flag.DurationVar(&timeout, "timeout", 5*time.Second, "Timeout for DNS queries")
+	flag.DurationVar(&pingTimeout, "ping-timeout", 5*time.Second, "Timeout for ping operations")
+	flag.IntVar(&pingCount, "ping-count", 4, "Default number of ping packets to send")
+	flag.DurationVar(&tlsTimeout, "tls-timeout", 10*time.Second, "Timeout for TLS certificate checks")
 
 	flag.Parse()
 
@@ -53,10 +61,25 @@ func run() error {
 		CustomServer: customWhoisServer,
 	}
 
+	// Create ping configuration
+	pingConfig := &ping.Config{
+		Timeout: pingTimeout,
+		Count:   pingCount,
+	}
+
+	// Create TLS configuration
+	tlsConfig := &tls.Config{
+		Timeout:     tlsTimeout,
+		Port:        443,
+		VerifyChain: true,
+	}
+
 	// Setup domain tools
 	s, err := internalServer.SetupTools(&internalServer.DomainToolsConfig{
 		QueryConfig: queryConfig,
 		WhoisConfig: whoisConfig,
+		PingConfig:  pingConfig,
+		TLSConfig:   tlsConfig,
 		Version:     version,
 	})
 	if err != nil {

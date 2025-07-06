@@ -1,6 +1,6 @@
-# DNS and WHOIS query MCP server `mcp-domaintools`
+# Network and domain tools MCP server `mcp-domaintools`
 
-<img src="https://i.imgur.com/cai3zrG.png" width="160" align="right" />  `mcp-domaintools` is a [Model Context Protocol (MCP)](https://modelcontextprotocol.io/introduction) server providing DNS and WHOIS query capabilities for AI assistants. It enables AI models to perform DNS lookups both via local DNS resolvers and remote DNS-over-HTTPS services.
+<img src="https://i.imgur.com/cai3zrG.png" width="160" align="right" />  `mcp-domaintools` is a [Model Context Protocol (MCP)](https://modelcontextprotocol.io/introduction) server providing comprehensive network and domain analysis capabilities for AI assistants. It enables AI models to perform DNS lookups, WHOIS queries, connectivity testing, TLS certificate analysis, and hostname resolution.
 
 For local DNS queries, it uses the system's configured DNS servers. For remote DNS queries, it uses Cloudflare DNS-over-HTTPS queries with a fallback to Google DNS-over-HTTPS. This is more than enough for most use cases.
 
@@ -13,6 +13,9 @@ For custom WHOIS servers, you can use the `--custom-whois-server` flag. The serv
 - **Local DNS Queries**: Perform DNS lookups using the OS-configured DNS servers
 - **Remote DNS-over-HTTPS**: Perform secure DNS queries via Cloudflare and Google DNS-over-HTTPS services
 - **WHOIS Lookups**: Perform WHOIS queries to get domain registration information
+- **Hostname Resolution**: Convert hostnames to their corresponding IP addresses (IPv4, IPv6, or both)
+- **Ping Operations**: Test connectivity and measure response times to hosts
+- **TLS Certificate Analysis**: Check TLS certificate chains for validity, expiration, and detailed certificate information
 - **Multiple Record Types**: Support for A, AAAA, CNAME, MX, NS, PTR, SOA, SRV, and TXT record types
 - **Fallback Mechanism**: Automatically tries multiple DNS servers for reliable results
 - **SSE Support**: Run as an HTTP server with Server-Sent Events (SSE) for web-based integrations
@@ -32,7 +35,10 @@ Add the following configuration to your editor's settings to use `mcp-domaintool
         // Uncomment and modify as needed:
         // "--remote-server-address=https://your-custom-doh-server.com/dns-query",
         // "--custom-whois-server=whois.yourdomain.com",
-        // "--timeout=10s"
+        // "--timeout=10s",
+        // "--ping-timeout=5s",
+        // "--ping-count=4",
+        // "--tls-timeout=10s"
       ],
       "env": {}
     }
@@ -57,7 +63,10 @@ Alternatively, you can run `mcp-domaintools` directly with Docker without instal
         // Add custom options if needed:
         // "--remote-server-address=https://your-custom-doh-server.com/dns-query",
         // "--custom-whois-server=whois.yourdomain.com",
-        // "--timeout=10s"
+        // "--timeout=10s",
+        // "--ping-timeout=5s",
+        // "--ping-count=4",
+        // "--tls-timeout=10s"
       ],
       "env": {}
     }
@@ -102,11 +111,14 @@ Download the pre-built binaries for your platform from the [GitHub Releases page
 
 ## Available MCP Tools
 
-There are 3 tools available:
+There are 6 tools available:
 
 - `local_dns_query`: Perform DNS queries against the local DNS resolver as configured by the OS
 - `remote_dns_query`: Perform DNS queries against a remote DNS-over-HTTPS server
 - `whois_query`: Perform WHOIS lookups to get domain registration information
+- `resolve_hostname`: Convert a hostname to its corresponding IP addresses (IPv4, IPv6, or both)
+- `ping`: Perform ping operations to test connectivity and measure response times to a host
+- `tls_certificate_check`: Check TLS certificate chain for a domain to analyze certificate validity, expiration, and chain structure
 
 ## Running Modes
 
@@ -128,7 +140,23 @@ mcp-domaintools --sse --sse-port=3000
 
 In SSE mode, the server will listen on the specified port (default: 3000) and provide the same MCP tools over HTTP using Server-Sent Events. This is useful for web applications or environments where stdio communication isn't practical.
 
-**Available SSE Options:**
+## Configuration Options
+
+The following command-line flags are available to configure the MCP server:
+
+**General Options:**
+- `--timeout=DURATION`: Timeout for DNS queries (default: 5s)
+- `--remote-server-address=URL`: Custom DNS-over-HTTPS server address
+- `--custom-whois-server=ADDRESS`: Custom WHOIS server address
+
+**Ping Options:**
+- `--ping-timeout=DURATION`: Timeout for ping operations (default: 5s)
+- `--ping-count=NUMBER`: Default number of ping packets to send (default: 4)
+
+**TLS Options:**
+- `--tls-timeout=DURATION`: Timeout for TLS certificate checks (default: 10s)
+
+**SSE Server Options:**
 - `--sse`: Enable SSE server mode
 - `--sse-port=PORT`: Specify the port to listen on (default: 3000)
 
@@ -154,3 +182,30 @@ Performs WHOIS lookups to get domain registration information.
 
 **Arguments:**
 - `domain` (required): The domain name to query (e.g., example.com)
+
+### Hostname Resolution
+
+Converts a hostname to its corresponding IP addresses.
+
+**Arguments:**
+- `hostname` (required): The hostname to resolve (e.g., example.com)
+- `ip_version` (optional): IP version to resolve (ipv4, ipv6, or both); defaults to ipv4
+
+### Ping
+
+Performs ping operations to test connectivity and measure response times to a host.
+
+**Arguments:**
+- `target` (required): The hostname or IP address to ping (e.g., example.com or 8.8.8.8)
+- `count` (optional): Number of ping packets to send; defaults to 4
+
+### TLS Certificate Check
+
+Checks TLS certificate chain for a domain to analyze certificate validity, expiration, and chain structure.
+
+**Arguments:**
+- `domain` (required): The domain name to check TLS certificate for (e.g., example.com)
+- `port` (optional): Port to connect to for TLS check; defaults to 443
+- `include_chain` (optional): Whether to include the full certificate chain in the response; defaults to true
+- `check_expiry` (optional): Whether to check certificate expiration and provide warnings; defaults to true
+- `server_name` (optional): Server name for SNI (Server Name Indication); defaults to the domain name
