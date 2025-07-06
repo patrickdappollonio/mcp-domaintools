@@ -164,7 +164,9 @@ func attemptTLSConnection(domain string, port int, serverName string, config *Co
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to %s: %w", address, err)
 	}
-	defer conn.Close()
+	defer func() {
+		_ = conn.Close()
+	}()
 
 	// Get connection state
 	state := conn.ConnectionState()

@@ -152,7 +152,7 @@ func performHTTPPing(ctx context.Context, method string, parsedURL *url.URL, cou
 	for i := 0; i < count; i++ {
 		select {
 		case <-ctx.Done():
-			break
+			return response, nil
 		default:
 		}
 
@@ -258,7 +258,9 @@ func performSingleHTTPPing(ctx context.Context, method string, parsedURL *url.UR
 		result.OneLiner = fmt.Sprintf("%s %s ERROR | total=%dms | %s", method, cleanURL.String(), totalTime.Milliseconds(), result.Error)
 		return result
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	// Record end time
 	endTime := time.Now()
