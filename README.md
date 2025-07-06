@@ -1,6 +1,6 @@
 # Network and domain tools MCP server `mcp-domaintools`
 
-<img src="https://i.imgur.com/cai3zrG.png" width="160" align="right" />  `mcp-domaintools` is a [Model Context Protocol (MCP)](https://modelcontextprotocol.io/introduction) server providing comprehensive network and domain analysis capabilities for AI assistants. It enables AI models to perform DNS lookups, WHOIS queries, connectivity testing, TLS certificate analysis, and hostname resolution.
+<img src="https://i.imgur.com/cai3zrG.png" width="160" align="right" />  `mcp-domaintools` is a [Model Context Protocol (MCP)](https://modelcontextprotocol.io/introduction) server providing comprehensive network and domain analysis capabilities for AI assistants. It enables AI models to perform DNS lookups, WHOIS queries, connectivity testing, TLS certificate analysis, HTTP endpoint monitoring, and hostname resolution.
 
 For local DNS queries, it uses the system's configured DNS servers. For remote DNS queries, it uses Cloudflare DNS-over-HTTPS queries with a fallback to Google DNS-over-HTTPS. This is more than enough for most use cases.
 
@@ -15,6 +15,7 @@ For custom WHOIS servers, you can use the `--custom-whois-server` flag. The serv
 - **WHOIS Lookups**: Perform WHOIS queries to get domain registration information
 - **Hostname Resolution**: Convert hostnames to their corresponding IP addresses (IPv4, IPv6, or both)
 - **Ping Operations**: Test connectivity and measure response times to hosts
+- **HTTP Ping Operations**: Test HTTP endpoints and measure detailed response times including DNS, connection, TLS, and TTFB
 - **TLS Certificate Analysis**: Check TLS certificate chains for validity, expiration, and detailed certificate information
 - **Multiple Record Types**: Support for A, AAAA, CNAME, MX, NS, PTR, SOA, SRV, and TXT record types
 - **Fallback Mechanism**: Automatically tries multiple DNS servers for reliable results
@@ -38,6 +39,8 @@ Add the following configuration to your editor's settings to use `mcp-domaintool
         // "--timeout=10s",
         // "--ping-timeout=5s",
         // "--ping-count=4",
+        // "--http-ping-timeout=10s",
+        // "--http-ping-count=1",
         // "--tls-timeout=10s"
       ],
       "env": {}
@@ -66,6 +69,8 @@ Alternatively, you can run `mcp-domaintools` directly with Docker without instal
         // "--timeout=10s",
         // "--ping-timeout=5s",
         // "--ping-count=4",
+        // "--http-ping-timeout=10s",
+        // "--http-ping-count=1",
         // "--tls-timeout=10s"
       ],
       "env": {}
@@ -111,13 +116,14 @@ Download the pre-built binaries for your platform from the [GitHub Releases page
 
 ## Available MCP Tools
 
-There are 6 tools available:
+There are 7 tools available:
 
 - `local_dns_query`: Perform DNS queries against the local DNS resolver as configured by the OS
 - `remote_dns_query`: Perform DNS queries against a remote DNS-over-HTTPS server
 - `whois_query`: Perform WHOIS lookups to get domain registration information
 - `resolve_hostname`: Convert a hostname to its corresponding IP addresses (IPv4, IPv6, or both)
 - `ping`: Perform ping operations to test connectivity and measure response times to a host
+- `http_ping`: Perform HTTP ping operations to test HTTP endpoints and measure detailed response times
 - `tls_certificate_check`: Check TLS certificate chain for a domain to analyze certificate validity, expiration, and chain structure
 
 ## Running Modes
@@ -152,6 +158,10 @@ The following command-line flags are available to configure the MCP server:
 **Ping Options:**
 - `--ping-timeout=DURATION`: Timeout for ping operations (default: 5s)
 - `--ping-count=NUMBER`: Default number of ping packets to send (default: 4)
+
+**HTTP Ping Options:**
+- `--http-ping-timeout=DURATION`: Timeout for HTTP ping operations (default: 10s)
+- `--http-ping-count=NUMBER`: Default number of HTTP ping requests to send (default: 1)
 
 **TLS Options:**
 - `--tls-timeout=DURATION`: Timeout for TLS certificate checks (default: 10s)
@@ -198,6 +208,28 @@ Performs ping operations to test connectivity and measure response times to a ho
 **Arguments:**
 - `target` (required): The hostname or IP address to ping (e.g., example.com or 8.8.8.8)
 - `count` (optional): Number of ping packets to send; defaults to 4
+
+### HTTP Ping
+
+Performs HTTP ping operations to test HTTP endpoints and measure detailed response times.
+
+**Arguments:**
+- `url` (required): The URL to ping (e.g., https://api.example.com/users)
+- `method` (optional): HTTP method to use; defaults to GET
+- `count` (optional): Number of HTTP requests to send; defaults to 1
+
+**Response Format:**
+The tool returns detailed timing information in a one-liner format:
+```
+GET https://api.example.com/users 200 OK | dns=42ms conn=156ms tls=298ms ttfb=567ms total=623ms
+```
+
+**Timing Measurements:**
+- `dns`: DNS resolution time
+- `conn`: TCP connection establishment time
+- `tls`: TLS handshake time (for HTTPS URLs)
+- `ttfb`: Time to first byte (server response time)
+- `total`: Total request time
 
 ### TLS Certificate Check
 

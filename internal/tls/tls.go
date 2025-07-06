@@ -19,19 +19,16 @@ import (
 
 // Config holds TLS certificate checking configuration.
 type Config struct {
-	Timeout      time.Duration
-	Port         int
-	VerifyChain  bool
-	FollowSNI    bool
-	MaxRedirects int
+	Timeout time.Duration
+	Port    int
 }
 
 // tlsCheckParams represents the parameters for TLS certificate checks.
 type tlsCheckParams struct {
 	Domain       string `json:"domain"`
 	Port         int    `json:"port,omitempty"`
-	IncludeChain bool   `json:"include_chain,omitempty"`
-	CheckExpiry  bool   `json:"check_expiry,omitempty"`
+	IncludeChain *bool  `json:"include_chain,omitempty"`
+	CheckExpiry  *bool  `json:"check_expiry,omitempty"`
 	ServerName   string `json:"server_name,omitempty"`
 }
 
@@ -96,6 +93,18 @@ func HandleTLSCheck(_ context.Context, request mcp.CallToolRequest, config *Conf
 	serverName := params.ServerName
 	if serverName == "" {
 		serverName = params.Domain
+	}
+
+	// Set default values for optional parameters
+	if params.IncludeChain == nil {
+		// Default to true if not specified
+		includeChain := true
+		params.IncludeChain = &includeChain
+	}
+	if params.CheckExpiry == nil {
+		// Default to true if not specified
+		checkExpiry := true
+		params.CheckExpiry = &checkExpiry
 	}
 
 	// Validate domain format
@@ -164,20 +173,42 @@ func attemptTLSConnection(domain string, port int, serverName string, config *Co
 	peerCerts := make([]CertificateInfo, 0, len(state.PeerCertificates))
 	var warnings []string
 
-	for i, cert := range state.PeerCertificates {
-		certInfo := processCertificate(cert)
-		peerCerts = append(peerCerts, certInfo)
+	// Only process certificates if include_chain is enabled
+	if *params.IncludeChain {
+		for i, cert := range state.PeerCertificates {
+			certInfo := processCertificate(cert)
+			peerCerts = append(peerCerts, certInfo)
 
-		// Add warnings for the server certificate
-		if i == 0 {
-			if certInfo.IsExpired {
-				warnings = append(warnings, "Server certificate is expired")
-			} else if certInfo.ExpiresInDays <= 30 {
-				warnings = append(warnings, fmt.Sprintf("Server certificate expires in %d days", certInfo.ExpiresInDays))
+			// Add warnings for the server certificate if check_expiry is enabled
+			if i == 0 && *params.CheckExpiry {
+				if certInfo.IsExpired {
+					warnings = append(warnings, "Server certificate is expired")
+				} else if certInfo.ExpiresInDays <= 30 {
+					warnings = append(warnings, fmt.Sprintf("Server certificate expires in %d days", certInfo.ExpiresInDays))
+				}
+
+				if certInfo.IsSelfSigned {
+					warnings = append(warnings, "Server certificate is self-signed")
+				}
 			}
+		}
+	} else {
+		// If include_chain is false, only include the server certificate
+		if len(state.PeerCertificates) > 0 {
+			certInfo := processCertificate(state.PeerCertificates[0])
+			peerCerts = append(peerCerts, certInfo)
 
-			if certInfo.IsSelfSigned {
-				warnings = append(warnings, "Server certificate is self-signed")
+			// Add warnings for the server certificate if check_expiry is enabled
+			if *params.CheckExpiry {
+				if certInfo.IsExpired {
+					warnings = append(warnings, "Server certificate is expired")
+				} else if certInfo.ExpiresInDays <= 30 {
+					warnings = append(warnings, fmt.Sprintf("Server certificate expires in %d days", certInfo.ExpiresInDays))
+				}
+
+				if certInfo.IsSelfSigned {
+					warnings = append(warnings, "Server certificate is self-signed")
+				}
 			}
 		}
 	}
@@ -226,7 +257,7 @@ func attemptTLSConnection(domain string, port int, serverName string, config *Co
 	connectionInfo := map[string]string{
 		"negotiated_protocol": state.NegotiatedProtocol,
 		"handshake_complete":  strconv.FormatBool(state.HandshakeComplete),
-		"mutual_tls":          strconv.FormatBool(len(state.PeerCertificates) > 0 && state.PeerCertificates[0].Subject.String() != ""),
+		"mutual_tls":          strconv.FormatBool(false), // We don't provide client certificates in this implementation
 	}
 
 	result := &CheckResult{

@@ -28,25 +28,25 @@ type pingParams struct {
 
 // PingResult represents the result of a single ping.
 type PingResult struct {
-	Sequence     int           `json:"sequence"`
-	ResponseTime time.Duration `json:"response_time_ms"`
-	TTL          int           `json:"ttl,omitempty"`
-	Success      bool          `json:"success"`
-	Error        string        `json:"error,omitempty"`
+	Sequence     int     `json:"sequence"`
+	ResponseTime float64 `json:"response_time_ms"`
+	TTL          int     `json:"ttl,omitempty"`
+	Success      bool    `json:"success"`
+	Error        string  `json:"error,omitempty"`
 }
 
 // PingResponse represents the complete ping response.
 type PingResponse struct {
-	Target          string        `json:"target"`
-	ResolvedIP      string        `json:"resolved_ip"`
-	PacketsSent     int           `json:"packets_sent"`
-	PacketsReceived int           `json:"packets_received"`
-	PacketLoss      float64       `json:"packet_loss_percent"`
-	Results         []PingResult  `json:"results"`
-	MinRTT          time.Duration `json:"min_rtt_ms"`
-	MaxRTT          time.Duration `json:"max_rtt_ms"`
-	AvgRTT          time.Duration `json:"avg_rtt_ms"`
-	Timestamp       string        `json:"timestamp"`
+	Target          string       `json:"target"`
+	ResolvedIP      string       `json:"resolved_ip"`
+	PacketsSent     int          `json:"packets_sent"`
+	PacketsReceived int          `json:"packets_received"`
+	PacketLoss      float64      `json:"packet_loss_percent"`
+	Results         []PingResult `json:"results"`
+	MinRTT          float64      `json:"min_rtt_ms"`
+	MaxRTT          float64      `json:"max_rtt_ms"`
+	AvgRTT          float64      `json:"avg_rtt_ms"`
+	Timestamp       string       `json:"timestamp"`
 }
 
 // rttStats holds statistics for round-trip time calculations.
@@ -135,9 +135,9 @@ func calculateFinalStats(response *PingResponse, stats *rttStats) {
 	response.PacketLoss = float64(response.PacketsSent-stats.successCount) / float64(response.PacketsSent) * 100
 
 	if stats.successCount > 0 {
-		response.MinRTT = stats.minRTT
-		response.MaxRTT = stats.maxRTT
-		response.AvgRTT = stats.totalRTT / time.Duration(stats.successCount)
+		response.MinRTT = float64(stats.minRTT) / float64(time.Millisecond)
+		response.MaxRTT = float64(stats.maxRTT) / float64(time.Millisecond)
+		response.AvgRTT = float64(stats.totalRTT) / float64(stats.successCount) / float64(time.Millisecond)
 	}
 }
 
@@ -247,19 +247,21 @@ pingLoop:
 		}
 
 		duration := time.Since(start)
-		result.ResponseTime = duration
+		result.ResponseTime = float64(duration) / float64(time.Millisecond)
 		result.Success = true
 
 		// Parse the reply to get TTL (if available)
-		var replyMessage *icmp.Message
 		if isIPv4 {
-			replyMessage, err = icmp.ParseMessage(int(ipv4.ICMPTypeEchoReply), reply[:n])
+			// For IPv4, we need to parse the IP header to get the TTL
+			if n >= 20 { // Minimum IPv4 header size
+				// TTL is at offset 8 in the IPv4 header
+				result.TTL = int(reply[8])
+			}
 		} else {
-			replyMessage, err = icmp.ParseMessage(int(ipv6.ICMPTypeEchoReply), reply[:n])
-		}
-		if err == nil {
-			if echo, ok := replyMessage.Body.(*icmp.Echo); ok {
-				result.TTL = echo.ID // This is a simplified TTL representation
+			// For IPv6, we need to parse the IPv6 header to get the Hop Limit
+			if n >= 40 { // Minimum IPv6 header size
+				// Hop Limit is at offset 7 in the IPv6 header
+				result.TTL = int(reply[7])
 			}
 		}
 
@@ -318,7 +320,7 @@ connectLoop:
 
 		if connected {
 			result.Success = true
-			result.ResponseTime = duration
+			result.ResponseTime = float64(duration) / float64(time.Millisecond)
 
 			// Update statistics
 			updateRTTStats(&stats, duration)

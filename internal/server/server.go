@@ -7,6 +7,7 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 	"github.com/patrickdappollonio/mcp-domaintools/internal/dns"
+	"github.com/patrickdappollonio/mcp-domaintools/internal/http_ping"
 	"github.com/patrickdappollonio/mcp-domaintools/internal/ping"
 	"github.com/patrickdappollonio/mcp-domaintools/internal/resolver"
 	"github.com/patrickdappollonio/mcp-domaintools/internal/tls"
@@ -19,6 +20,7 @@ type DomainToolsConfig struct {
 	WhoisConfig    *whois.Config
 	ResolverConfig *resolver.Config
 	PingConfig     *ping.Config
+	HTTPPingConfig *http_ping.Config
 	TLSConfig      *tls.Config
 	Version        string
 }
@@ -47,12 +49,19 @@ func SetupTools(config *DomainToolsConfig) (*server.MCPServer, error) {
 		}
 	}
 
+	// Initialize HTTP ping config if not provided
+	if config.HTTPPingConfig == nil {
+		config.HTTPPingConfig = &http_ping.Config{
+			Timeout: 10 * time.Second,
+			Count:   1,
+		}
+	}
+
 	// Initialize TLS config if not provided
 	if config.TLSConfig == nil {
 		config.TLSConfig = &tls.Config{
-			Timeout:     10 * time.Second,
-			Port:        443,
-			VerifyChain: true,
+			Timeout: 10 * time.Second,
+			Port:    443,
 		}
 	}
 
@@ -144,6 +153,24 @@ func SetupTools(config *DomainToolsConfig) (*server.MCPServer, error) {
 		),
 	)
 
+	// Add HTTP ping tool
+	httpPingTool := mcp.NewTool("http_ping",
+		mcp.WithDescription("Perform HTTP ping operations to test connectivity and measure response times to HTTP endpoints"),
+		mcp.WithString("url",
+			mcp.Required(),
+			mcp.Description("The URL to ping (e.g., https://api.example.com/users)"),
+		),
+		mcp.WithString("method",
+			mcp.Description("HTTP method to use; defaults to GET"),
+			mcp.Enum("GET", "POST", "PUT", "DELETE", "HEAD", "OPTIONS", "PATCH"),
+			mcp.DefaultString("GET"),
+		),
+		mcp.WithNumber("count",
+			mcp.Description("Number of HTTP requests to send; defaults to 1"),
+			mcp.DefaultNumber(1),
+		),
+	)
+
 	// Create handler wrappers
 	localDNSHandler := func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		return dns.HandleLocalDNSQuery(ctx, request, config.QueryConfig)
@@ -169,6 +196,10 @@ func SetupTools(config *DomainToolsConfig) (*server.MCPServer, error) {
 		return tls.HandleTLSCheck(ctx, request, config.TLSConfig)
 	}
 
+	httpPingHandler := func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		return http_ping.HandleHTTPPing(ctx, request, config.HTTPPingConfig)
+	}
+
 	// Add handlers for the tools
 	s.AddTool(localQueryTool, localDNSHandler)
 	s.AddTool(remoteQueryTool, remoteDNSHandler)
@@ -176,6 +207,7 @@ func SetupTools(config *DomainToolsConfig) (*server.MCPServer, error) {
 	s.AddTool(resolveHostTool, resolveHostHandler)
 	s.AddTool(pingTool, pingHandler)
 	s.AddTool(tlsCheckTool, tlsCheckHandler)
+	s.AddTool(httpPingTool, httpPingHandler)
 
 	return s, nil
 }
