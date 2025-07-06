@@ -121,7 +121,7 @@ func HandleHTTPPing(ctx context.Context, request mcp.CallToolRequest, config *Co
 	defer cancel()
 
 	// Perform HTTP ping
-	httpResponse, err := performHTTPPing(ctxWithTimeout, method, parsedURL, count)
+	httpResponse, err := performHTTPPing(ctxWithTimeout, method, parsedURL, count, config.Timeout)
 	if err != nil {
 		return nil, fmt.Errorf("HTTP ping failed: %w", err)
 	}
@@ -131,7 +131,7 @@ func HandleHTTPPing(ctx context.Context, request mcp.CallToolRequest, config *Co
 }
 
 // performHTTPPing executes the actual HTTP ping operation.
-func performHTTPPing(ctx context.Context, method string, parsedURL *url.URL, count int) (*HTTPPingResponse, error) {
+func performHTTPPing(ctx context.Context, method string, parsedURL *url.URL, count int, timeout time.Duration) (*HTTPPingResponse, error) {
 	// Create clean URL without query parameters for display
 	cleanURL := &url.URL{
 		Scheme: parsedURL.Scheme,
@@ -156,7 +156,7 @@ func performHTTPPing(ctx context.Context, method string, parsedURL *url.URL, cou
 		default:
 		}
 
-		result := performSingleHTTPPing(ctx, method, parsedURL, i+1)
+		result := performSingleHTTPPing(ctx, method, parsedURL, i+1, timeout)
 		response.Results = append(response.Results, result)
 
 		if result.Success {
@@ -179,7 +179,7 @@ func performHTTPPing(ctx context.Context, method string, parsedURL *url.URL, cou
 }
 
 // performSingleHTTPPing performs a single HTTP ping request.
-func performSingleHTTPPing(ctx context.Context, method string, parsedURL *url.URL, sequence int) HTTPPingResult {
+func performSingleHTTPPing(ctx context.Context, method string, parsedURL *url.URL, sequence int, timeout time.Duration) HTTPPingResult {
 	// Create clean URL without query parameters for display
 	cleanURL := &url.URL{
 		Scheme: parsedURL.Scheme,
@@ -229,7 +229,7 @@ func performSingleHTTPPing(ctx context.Context, method string, parsedURL *url.UR
 
 	// Create HTTP client with trace
 	client := &http.Client{
-		Timeout: 30 * time.Second,
+		Timeout: timeout,
 		Transport: &http.Transport{
 			DisableKeepAlives: true, // Ensure fresh connections for accurate timing
 		},
