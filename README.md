@@ -1,5 +1,7 @@
 # Network and domain tools MCP server `mcp-domaintools`
 
+[![Github Downloads](https://img.shields.io/github/downloads/patrickdappollonio/mcp-domaintools/total?color=orange&label=github%20downloads)](https://github.com/patrickdappollonio/mcp-domaintools/releases)
+
 <img src="https://i.imgur.com/cai3zrG.png" width="160" align="right" /> `mcp-domaintools` is a [Model Context Protocol (MCP)](https://modelcontextprotocol.io/introduction) server providing comprehensive network and domain analysis capabilities for AI assistants. It enables AI models to perform DNS lookups, WHOIS queries, connectivity testing, TLS certificate analysis, HTTP endpoint monitoring, and hostname resolution.
 
 For local DNS queries, it uses the system's configured DNS servers. For remote DNS queries, it uses Cloudflare DNS-over-HTTPS queries with a fallback to Google DNS-over-HTTPS. This is more than enough for most use cases.
