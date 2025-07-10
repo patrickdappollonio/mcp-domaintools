@@ -10,7 +10,7 @@ require (
 	github.com/miekg/dns v1.1.67
 	github.com/shynome/doh-client v1.2.0
 	golang.org/x/net v0.40.0
-	golang.org/x/sync v0.14.0
+	golang.org/x/sync v0.16.0
 )
 
 require (
