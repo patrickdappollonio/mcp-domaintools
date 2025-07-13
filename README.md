@@ -25,9 +25,11 @@ For custom WHOIS servers, you can use the `--custom-whois-server` flag. The serv
 
 ## Installation
 
+There are three ways to get this MCP server: you can use the Docker mode (which, if you have Docker installed, will automatically download and run the MCP server) or the binary options, both by getting one [from the releases page](https://github.com/patrickdappollonio/mcp-domaintools/releases) or by [installing it with Homebrew for macOS and Linux](#homebrew-macos-and-linux).
+
 ### Editor Configuration
 
-Add the following configuration to your editor's settings to use `mcp-domaintools`:
+Add the following configuration to your editor's settings to use `mcp-domaintools` via the binary option:
 
 ```json5
 {
