@@ -14,8 +14,8 @@ github.com/likexian/gokit v0.25.15 h1:QjospM1eXhdMMHwZRpMKKAHY/Wig9wgcREmLtf9Nsl
 github.com/likexian/gokit v0.25.15/go.mod h1:S2QisdsxLEHWeD/XI0QMVeggp+jbxYqUxMvSBil7MRg=
 github.com/likexian/whois v1.15.6 h1:hizngFHJTNQDlhwhU+FEGyPGxy8bRnf25gHDNrSB4Ag=
 github.com/likexian/whois v1.15.6/go.mod h1:vx3kt3sZ4mx4XFgpaNp3GXQCZQIzAoyrUAkRtJwoM2I=
-github.com/mark3labs/mcp-go v0.33.0 h1:naxhjnTIs/tyPZmWUZFuG0lDmdA6sUyYGGf3gsHvTCc=
-github.com/mark3labs/mcp-go v0.33.0/go.mod h1:rXqOudj/djTORU/ThxYx8fqEVj/5pvTuuebQ2RC7uk4=
+github.com/mark3labs/mcp-go v0.34.0 h1:eWy7WBGvhk6EyAAyVzivTCprE52iXJwNtvHV6Cv3bR0=
+github.com/mark3labs/mcp-go v0.34.0/go.mod h1:rXqOudj/djTORU/ThxYx8fqEVj/5pvTuuebQ2RC7uk4=
 github.com/miekg/dns v1.1.67 h1:kg0EHj0G4bfT5/oOys6HhZw4vmMlnoZ+gDu8tJ/AlI0=
 github.com/miekg/dns v1.1.67/go.mod h1:fujopn7TB3Pu3JM69XaawiU0wqjpL9/8xGop5UrTPps=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
