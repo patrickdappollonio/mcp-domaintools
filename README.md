@@ -139,8 +139,16 @@ Check the implementation above on how to configure the MCP server to run as a co
 The MCP server is also available via `npm`:
 
 ```bash
-npm install @patrickdappollonio/mcp-domaintools
+npm install @patrickdappollonio/mcp-domaintools@latest
 ```
+
+Or using `npx`:
+
+```bash
+npx -y @patrickdappollonio/mcp-domaintools@latest
+```
+
+Which will run the MCP server in `stdio` mode (make sure that's the AI tool the one running `npx` though!).
 
 ### Cursor
 
