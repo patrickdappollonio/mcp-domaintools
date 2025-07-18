@@ -83,6 +83,32 @@ Alternatively, you can run `mcp-domaintools` directly with Docker without instal
 }
 ```
 
+You can also use the MCP server via `npm`:
+
+```json5
+{
+  "mcpServers": {
+    "domaintools": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@patrickdappollonio/mcp-domaintools",
+        // Add custom options if needed:
+        // "--remote-server-address=https://your-custom-doh-server.com/dns-query",
+        // "--custom-whois-server=whois.yourdomain.com",
+        // "--timeout=5s",
+        // "--ping-timeout=5s",
+        // "--ping-count=4",
+        // "--http-ping-timeout=10s",
+        // "--http-ping-count=1",
+        // "--tls-timeout=10s"
+      ],
+      "env": {}
+    }
+  }
+}
+```
+
 See ["Available MCP Tools"](#available-mcp-tools) for information on the tools exposed by `mcp-domaintools`.
 
 ### Homebrew (macOS and Linux)
@@ -107,6 +133,14 @@ docker run --rm -p 3000:3000 ghcr.io/patrickdappollonio/mcp-domaintools:latest -
 ```
 
 Check the implementation above on how to configure the MCP server to run as a container in your editor or tool.
+
+### npm
+
+The MCP server is also available via `npm`:
+
+```bash
+npm install @patrickdappollonio/mcp-domaintools
+```
 
 ### Cursor
 
