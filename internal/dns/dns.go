@@ -245,7 +245,7 @@ func ConvertToQType(recordType string) (uint16, error) {
 	if qtype, exists := dns.StringToType[recordType]; exists {
 		return qtype, nil
 	}
-	return 0, fmt.Errorf("unsupported record type: %s", recordType)
+	return 0, fmt.Errorf("unsupported record type %q", recordType)
 }
 
 // createDNSResponse creates a JSON-serializable map from a DNS message.
