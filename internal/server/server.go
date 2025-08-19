@@ -2,11 +2,13 @@ package server
 
 import (
 	"context"
+	"slices"
 	"time"
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
-	"github.com/patrickdappollonio/mcp-domaintools/internal/dns"
+	"github.com/miekg/dns"
+	internaldns "github.com/patrickdappollonio/mcp-domaintools/internal/dns"
 	"github.com/patrickdappollonio/mcp-domaintools/internal/http_ping"
 	"github.com/patrickdappollonio/mcp-domaintools/internal/ping"
 	"github.com/patrickdappollonio/mcp-domaintools/internal/resolver"
@@ -16,13 +18,23 @@ import (
 
 // DomainToolsConfig contains configuration for the domain tools.
 type DomainToolsConfig struct {
-	QueryConfig    *dns.QueryConfig
+	QueryConfig    *internaldns.QueryConfig
 	WhoisConfig    *whois.Config
 	ResolverConfig *resolver.Config
 	PingConfig     *ping.Config
 	HTTPPingConfig *http_ping.Config
 	TLSConfig      *tls.Config
 	Version        string
+}
+
+// getDNSRecordTypes returns a sorted slice of all DNS record type names.
+func getDNSRecordTypes() []string {
+	var recordTypes []string
+	for recordType := range dns.StringToType {
+		recordTypes = append(recordTypes, recordType)
+	}
+	slices.Sort(recordTypes)
+	return recordTypes
 }
 
 // SetupTools creates and configures the domain query tools.
@@ -33,6 +45,9 @@ func SetupTools(config *DomainToolsConfig) (*server.MCPServer, error) {
 		config.Version,
 		server.WithRecovery(),
 	)
+
+	// Get all available DNS record types for the enum
+	dnsRecordTypes := getDNSRecordTypes()
 
 	// Initialize resolver config if not provided
 	if config.ResolverConfig == nil {
@@ -74,8 +89,8 @@ func SetupTools(config *DomainToolsConfig) (*server.MCPServer, error) {
 		),
 		mcp.WithString("record_type",
 			mcp.Required(),
-			mcp.Description("The type of DNS record to query; defaults to A"),
-			mcp.Enum("A", "AAAA", "CNAME", "MX", "NS", "PTR", "SOA", "SRV", "TXT"),
+			mcp.Description("The type of DNS record to query (supports all standard DNS record types); defaults to A"),
+			mcp.Enum(dnsRecordTypes...),
 			mcp.DefaultString("A"),
 		),
 	)
@@ -89,8 +104,8 @@ func SetupTools(config *DomainToolsConfig) (*server.MCPServer, error) {
 		),
 		mcp.WithString("record_type",
 			mcp.Required(),
-			mcp.Description("The type of DNS record to query; defaults to A"),
-			mcp.Enum("A", "AAAA", "CNAME", "MX", "NS", "PTR", "SOA", "SRV", "TXT"),
+			mcp.Description("The type of DNS record to query (supports all standard DNS record types); defaults to A"),
+			mcp.Enum(dnsRecordTypes...),
 			mcp.DefaultString("A"),
 		),
 	)
@@ -173,11 +188,11 @@ func SetupTools(config *DomainToolsConfig) (*server.MCPServer, error) {
 
 	// Create handler wrappers
 	localDNSHandler := func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		return dns.HandleLocalDNSQuery(ctx, request, config.QueryConfig)
+		return internaldns.HandleLocalDNSQuery(ctx, request, config.QueryConfig)
 	}
 
 	remoteDNSHandler := func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		return dns.HandleRemoteDNSQuery(ctx, request, config.QueryConfig)
+		return internaldns.HandleRemoteDNSQuery(ctx, request, config.QueryConfig)
 	}
 
 	whoisHandler := func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
