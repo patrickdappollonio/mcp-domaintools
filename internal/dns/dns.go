@@ -240,29 +240,12 @@ func HandleRemoteDNSQuery(ctx context.Context, request mcp.CallToolRequest, conf
 }
 
 // ConvertToQType converts a string record type to the corresponding DNS query type.
+// This function supports all DNS record types available in the miekg/dns package.
 func ConvertToQType(recordType string) (uint16, error) {
-	switch recordType {
-	case "A":
-		return dns.TypeA, nil
-	case "AAAA":
-		return dns.TypeAAAA, nil
-	case "CNAME":
-		return dns.TypeCNAME, nil
-	case "MX":
-		return dns.TypeMX, nil
-	case "NS":
-		return dns.TypeNS, nil
-	case "PTR":
-		return dns.TypePTR, nil
-	case "SOA":
-		return dns.TypeSOA, nil
-	case "SRV":
-		return dns.TypeSRV, nil
-	case "TXT":
-		return dns.TypeTXT, nil
-	default:
-		return 0, fmt.Errorf("unsupported record type: %s", recordType)
+	if qtype, exists := dns.StringToType[recordType]; exists {
+		return qtype, nil
 	}
+	return 0, fmt.Errorf("unsupported record type: %s", recordType)
 }
 
 // createDNSResponse creates a JSON-serializable map from a DNS message.
@@ -305,6 +288,10 @@ func createDNSResponse(response *dns.Msg) map[string]any {
 		case dns.TypeAAAA:
 			if rec, ok := a.(*dns.AAAA); ok {
 				data = rec.AAAA.String()
+			}
+		case dns.TypeCAA:
+			if rec, ok := a.(*dns.CAA); ok {
+				data = fmt.Sprintf("%d %s %q", rec.Flag, rec.Tag, rec.Value)
 			}
 		case dns.TypeCNAME:
 			if rec, ok := a.(*dns.CNAME); ok {
