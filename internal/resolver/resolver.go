@@ -2,6 +2,7 @@ package resolver
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"time"
@@ -48,37 +49,57 @@ func HandleHostnameResolution(ctx context.Context, request mcp.CallToolRequest, 
 		"hostname":   params.Hostname,
 		"timestamp":  time.Now().Format(time.RFC3339),
 		"ip_version": params.IPVersion,
+		"failed":     false,
 	}
 
 	// Resolve based on IP version
 	switch params.IPVersion {
 	case "ipv4", "ipv6":
 		addresses, err := lookupIPAddresses(ctxWithTimeout, params.Hostname, params.IPVersion)
-		if err != nil {
+		if err == nil {
+			responseData[params.IPVersion+"_addresses"] = addresses
+		} else if isHostNotFoundError(err) {
+			responseData["error"] = err.Error()
+			responseData["failed"] = true
+		} else {
 			return nil, fmt.Errorf("failed to resolve %s addresses: %w", params.IPVersion, err)
 		}
-		responseData[params.IPVersion+"_addresses"] = addresses
 
 	default: // "both"
 		// Get IPv4 addresses
 		ipv4Addresses, err := lookupIPAddresses(ctxWithTimeout, params.Hostname, "ipv4")
 		if err == nil {
 			responseData["ipv4_addresses"] = ipv4Addresses
+		} else if isHostNotFoundError(err) {
+			responseData["error"] = err.Error()
+			responseData["failed"] = true
 		} else {
-			responseData["ipv4_error"] = err.Error()
+			return nil, fmt.Errorf("failed to resolve ipv4 addresses: %w", err)
 		}
 
 		// Get IPv6 addresses
 		ipv6Addresses, err := lookupIPAddresses(ctxWithTimeout, params.Hostname, "ipv6")
 		if err == nil {
 			responseData["ipv6_addresses"] = ipv6Addresses
+		} else if isHostNotFoundError(err) {
+			responseData["error"] = err.Error()
+			responseData["failed"] = true
 		} else {
-			responseData["ipv6_error"] = err.Error()
+			return nil, fmt.Errorf("failed to resolve ipv6 addresses: %w", err)
 		}
 	}
 
 	// Use the response package to handle JSON encoding and MCP tool result creation
 	return resp.JSON(responseData)
+}
+
+// isHostNotFoundError checks if the error is a DNS "host not found" type error.
+func isHostNotFoundError(err error) bool {
+	var dnsErr *net.DNSError
+	if errors.As(err, &dnsErr) {
+		return dnsErr.IsNotFound
+	}
+	return false
 }
 
 // lookupIPAddresses handles the IP lookup for a specific IP version (IPv4 or IPv6).
